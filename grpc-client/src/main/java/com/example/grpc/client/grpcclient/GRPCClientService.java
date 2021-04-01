@@ -19,9 +19,11 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Stack;
 
 @Service
 public class GRPCClientService {
+	private int DEADLINE;
     public String ping() {
         	ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 9090)
                 .usePlaintext()
@@ -34,7 +36,8 @@ public class GRPCClientService {
 		channel.shutdown();        
 		return helloResponse.getPong();
     }
-    public String multiplyMatrix(int[][]A, int[][]B) {
+    public String multiplyMatrix(int[][]A, int[][]B, int deadline) {
+    	this.DEADLINE = deadline;
 		ManagedChannel channel1 = ManagedChannelBuilder.forAddress("localhost", 9090).usePlaintext().build();
 		ManagedChannel channel2 = ManagedChannelBuilder.forAddress("localhost", 9090).usePlaintext().build();
 		ManagedChannel channel3 = ManagedChannelBuilder.forAddress("localhost", 9090).usePlaintext().build();
@@ -43,7 +46,6 @@ public class GRPCClientService {
 		ManagedChannel channel6 = ManagedChannelBuilder.forAddress("localhost", 9090).usePlaintext().build();
 		ManagedChannel channel7 = ManagedChannelBuilder.forAddress("localhost", 9090).usePlaintext().build();
 		ManagedChannel channel8 = ManagedChannelBuilder.forAddress("localhost", 9090).usePlaintext().build();
-
 
 		MatrixMultServiceBlockingStub stub = MatrixMultServiceGrpc.newBlockingStub(channel1);
 		MatrixMultServiceBlockingStub stub2 = MatrixMultServiceGrpc.newBlockingStub(channel2);
@@ -55,130 +57,94 @@ public class GRPCClientService {
 		MatrixMultServiceBlockingStub stub8 = MatrixMultServiceGrpc.newBlockingStub(channel8);
 
 		StubsPool stubsPool = new StubsPool();
-		List<MatrixMultServiceBlockingStub> allStubs = new ArrayList<>();
-		int NUM_SERVER = 0;
-		int[][] result = recursiveMult(A, B, stubsPool, allStubs, NUM_SERVER,stub);
-		return Arrays.deepToString(result);
-	}
-	private int[][] recursiveMult(int[][] A, int[][] B, StubsPool stubsPool,
-								 List<MatrixMultServiceBlockingStub> allStubs, int num_server, MatrixMultServiceBlockingStub stub) {
-    	int SIZE = A.length;
-    	if (SIZE > 4) {
-			int[][] A11 = new int[SIZE / 2][SIZE / 2];
-			int[][] A12 = new int[SIZE / 2][SIZE / 2];
-			int[][] A21 = new int[SIZE / 2][SIZE / 2];
-			int[][] A22 = new int[SIZE / 2][SIZE / 2];
-			int[][] B11 = new int[SIZE / 2][SIZE / 2];
-			int[][] B12 = new int[SIZE / 2][SIZE / 2];
-			int[][] B21 = new int[SIZE / 2][SIZE / 2];
-			int[][] B22 = new int[SIZE / 2][SIZE / 2];
+		Stack<MatrixMultServiceBlockingStub> allStubs = new Stack<>();
+		DeadlineFootprintScaling deadlineFootprintScaling = new DeadlineFootprintScaling();
 
-			for (int i = 0; i < SIZE / 2; i++) {
-				for (int j = 0; j < SIZE / 2; j++) {
+		allStubs.add(stub);allStubs.add(stub2);allStubs.add(stub3);allStubs.add(stub4);allStubs.add(stub5);
+		allStubs.add(stub6);allStubs.add(stub7);allStubs.add(stub8);
+		stubsPool.addStub(stub);
 
-					A11[i][j] = A[i][j]; // top left
-					A12[i][j] = A[i][j + SIZE / 2]; // top right
-					A21[i][j] = A[i + SIZE / 2][j]; // bottom left
-					A22[i][j] = A[i + SIZE / 2][j + SIZE / 2]; // bottom right
+		int NUM_SERVER = 1;
+		int SIZE = A.length;
+		int numBlockCalls = 10;
 
-					B11[i][j] = B[i][j]; // top left
-					B12[i][j] = B[i][j + SIZE / 2]; // top right
-					B21[i][j] = B[i + SIZE / 2][j]; // bottom left
-					B22[i][j] = B[i + SIZE / 2][j + SIZE / 2]; // bottom right
-				}
+		int[][] A11 = new int[SIZE / 2][SIZE / 2];
+		int[][] A12 = new int[SIZE / 2][SIZE / 2];
+		int[][] A21 = new int[SIZE / 2][SIZE / 2];
+		int[][] A22 = new int[SIZE / 2][SIZE / 2];
+		int[][] B11 = new int[SIZE / 2][SIZE / 2];
+		int[][] B12 = new int[SIZE / 2][SIZE / 2];
+		int[][] B21 = new int[SIZE / 2][SIZE / 2];
+		int[][] B22 = new int[SIZE / 2][SIZE / 2];
+
+		for (int i = 0; i < SIZE / 2; i++) {
+			for (int j = 0; j < SIZE / 2; j++) {
+
+				A11[i][j] = A[i][j]; // top left
+				A12[i][j] = A[i][j + SIZE / 2]; // top right
+				A21[i][j] = A[i + SIZE / 2][j]; // bottom left
+				A22[i][j] = A[i + SIZE / 2][j + SIZE / 2]; // bottom right
+
+				B11[i][j] = B[i][j]; // top left
+				B12[i][j] = B[i][j + SIZE / 2]; // top right
+				B21[i][j] = B[i + SIZE / 2][j]; // bottom left
+				B22[i][j] = B[i + SIZE / 2][j + SIZE / 2]; // bottom right
 			}
-			int[][] M1C1d = recursiveMult(A11, B11, stubsPool, allStubs, num_server++,stub);
-			int[][] M2C1d = recursiveMult(A12, B21, stubsPool, allStubs, num_server++,stub);
-
-			int[][] M1C2d = recursiveMult(A11, B12, stubsPool, allStubs,num_server++,stub);
-			int[][] M2C2d = recursiveMult(A12, B22,stubsPool, allStubs,num_server++,stub);
-
-			int[][] M1C3d = recursiveMult(A21, B11, stubsPool, allStubs,num_server++,stub);
-			int[][] M2C3d = recursiveMult(A22, B21,stubsPool, allStubs,num_server++,stub);
-
-			int[][] M1C4d = recursiveMult(A21, B12,stubsPool, allStubs,num_server++,stub);
-			int[][] M2C4d = recursiveMult(A22, B22,stubsPool, allStubs,num_server++,stub);
-
-			Matrix M1C1 =  MatrixPool.makeProtoFrom2D(M1C1d);
-			Matrix M1C2 =  MatrixPool.makeProtoFrom2D(M1C2d);
-			Matrix M1C3 =  MatrixPool.makeProtoFrom2D(M1C3d);
-			Matrix M1C4 =  MatrixPool.makeProtoFrom2D(M1C4d);
-
-			Matrix M2C1 =  MatrixPool.makeProtoFrom2D(M2C1d);
-			Matrix M2C2 =  MatrixPool.makeProtoFrom2D(M2C2d);
-			Matrix M2C3 =  MatrixPool.makeProtoFrom2D(M2C2d);
-			Matrix M2C4 =  MatrixPool.makeProtoFrom2D(M2C2d);
-
-
-			MMReply C1=stub.addBlock(MMRequest.newBuilder().setMatrixA(M1C1).setMatrixB(M2C1).build());
-			MMReply C2=stub.addBlock(MMRequest.newBuilder().setMatrixA(M1C2).setMatrixB(M2C2).build());
-			MMReply C3=stub.addBlock(MMRequest.newBuilder().setMatrixA(M1C3).setMatrixB(M2C3).build());
-			MMReply C4=stub.addBlock(MMRequest.newBuilder().setMatrixA(M1C4).setMatrixB(M2C4).build());
-
-			int[][] C1array = MatrixPool.make2DFromProto(C1.getMatrixC());
-			int[][] C2array = MatrixPool.make2DFromProto(C2.getMatrixC());
-			int[][] C3array = MatrixPool.make2DFromProto(C3.getMatrixC());
-			int[][] C4array = MatrixPool.make2DFromProto(C4.getMatrixC());
-
-			return MatrixPool.joinFromQuarters(C1array, C2array, C3array, C4array);
-		}else {
-			int[][] A11 = new int[SIZE / 2][SIZE / 2];
-			int[][] A12 = new int[SIZE / 2][SIZE / 2];
-			int[][] A21 = new int[SIZE / 2][SIZE / 2];
-			int[][] A22 = new int[SIZE / 2][SIZE / 2];
-			int[][] B11 = new int[SIZE / 2][SIZE / 2];
-			int[][] B12 = new int[SIZE / 2][SIZE / 2];
-			int[][] B21 = new int[SIZE / 2][SIZE / 2];
-			int[][] B22 = new int[SIZE / 2][SIZE / 2];
-
-			for (int i = 0; i < SIZE / 2; i++) {
-				for (int j = 0; j < SIZE / 2; j++) {
-
-					A11[i][j] = A[i][j]; // top left
-					A12[i][j] = A[i][j + SIZE / 2]; // top right
-					A21[i][j] = A[i + SIZE / 2][j]; // bottom left
-					A22[i][j] = A[i + SIZE / 2][j + SIZE / 2]; // bottom right
-
-					B11[i][j] = B[i][j]; // top left
-					B12[i][j] = B[i][j + SIZE / 2]; // top right
-					B21[i][j] = B[i + SIZE / 2][j]; // bottom left
-					B22[i][j] = B[i + SIZE / 2][j + SIZE / 2]; // bottom right
-				}
-			}
-
-			Matrix QA11 = MatrixPool.makeProtoFrom2D(A11);
-			Matrix QA12 = MatrixPool.makeProtoFrom2D(A12);
-			Matrix QA21 = MatrixPool.makeProtoFrom2D(A21);
-			Matrix QA22 = MatrixPool.makeProtoFrom2D(A22);
-			Matrix QB11 = MatrixPool.makeProtoFrom2D(B11);
-			Matrix QB12 = MatrixPool.makeProtoFrom2D(B12);
-			Matrix QB21 = MatrixPool.makeProtoFrom2D(B21);
-			Matrix QB22 = MatrixPool.makeProtoFrom2D(B22);
-
-			MMReply M1C1 = stub.multBlock(MMRequest.newBuilder().setMatrixA(QA11).setMatrixB(QB11).build());
-			MMReply M2C1 = stub.multBlock(MMRequest.newBuilder().setMatrixA(QA12).setMatrixB(QB21).build());
-
-			MMReply M1C2 = stub.multBlock(MMRequest.newBuilder().setMatrixA(QA11).setMatrixB(QB12).build());
-			MMReply M2C2 = stub.multBlock(MMRequest.newBuilder().setMatrixA(QA12).setMatrixB(QB22).build());
-
-			MMReply M1C3 = stub.multBlock(MMRequest.newBuilder().setMatrixA(QA21).setMatrixB(QB11).build());
-			MMReply M2C3 = stub.multBlock(MMRequest.newBuilder().setMatrixA(QA22).setMatrixB(QB21).build());
-
-			MMReply M1C4 = stub.multBlock(MMRequest.newBuilder().setMatrixA(QA21).setMatrixB(QB12).build());
-			MMReply M2C4 = stub.multBlock(MMRequest.newBuilder().setMatrixA(QA22).setMatrixB(QB22).build());
-
-
-			MMReply C1=stub.addBlock(MMRequest.newBuilder().setMatrixA(M1C1.getMatrixC()).setMatrixB(M2C1.getMatrixC()).build());
-			MMReply C2=stub.addBlock(MMRequest.newBuilder().setMatrixA(M1C2.getMatrixC()).setMatrixB(M2C2.getMatrixC()).build());
-			MMReply C3=stub.addBlock(MMRequest.newBuilder().setMatrixA(M1C3.getMatrixC()).setMatrixB(M2C3.getMatrixC()).build());
-			MMReply C4=stub.addBlock(MMRequest.newBuilder().setMatrixA(M1C4.getMatrixC()).setMatrixB(M2C4.getMatrixC()).build());
-
-			int[][] C1array = MatrixPool.make2DFromProto(C1.getMatrixC());
-			int[][] C2array = MatrixPool.make2DFromProto(C2.getMatrixC());
-			int[][] C3array = MatrixPool.make2DFromProto(C3.getMatrixC());
-			int[][] C4array = MatrixPool.make2DFromProto(C4.getMatrixC());
-
-			return MatrixPool.joinFromQuarters(C1array, C2array, C3array, C4array);
 		}
+
+		Matrix QA11 = MatrixPool.makeProtoFrom2D(A11);
+		Matrix QA12 = MatrixPool.makeProtoFrom2D(A12);
+		Matrix QA21 = MatrixPool.makeProtoFrom2D(A21);
+		Matrix QA22 = MatrixPool.makeProtoFrom2D(A22);
+		Matrix QB11 = MatrixPool.makeProtoFrom2D(B11);
+		Matrix QB12 = MatrixPool.makeProtoFrom2D(B12);
+		Matrix QB21 = MatrixPool.makeProtoFrom2D(B21);
+		Matrix QB22 = MatrixPool.makeProtoFrom2D(B22);
+
+		//START OF FOOTPRINT TRACKING
+		deadlineFootprintScaling.setStart();
+
+		MMReply M1C1 = stubsPool.getNext().multBlock(MMRequest.newBuilder().setMatrixA(QA11).setMatrixB(QB11).build());
+
+		deadlineFootprintScaling.setEndTime();
+
+		//GETS THE NUMBER OF SERVERS NEEDED
+		int numberOfServersNeeded = deadlineFootprintScaling.calcNumOfServers(numBlockCalls,DEADLINE);
+
+		System.out.println(numberOfServersNeeded + " Servers are needed");
+		if (numberOfServersNeeded>=8) {
+			for (MatrixMultServiceBlockingStub current: allStubs)
+				stubsPool.addStub(current);
+		}
+		else if (numberOfServersNeeded>1) {
+			for (int i = 0; i<numberOfServersNeeded; i++) {
+				stubsPool.addStub(allStubs.pop());
+			}
+		}
+
+		MMReply M2C1 = stubsPool.getNext().multBlock(MMRequest.newBuilder().setMatrixA(QA12).setMatrixB(QB21).build());
+		MMReply M1C2 = stubsPool.getNext().multBlock(MMRequest.newBuilder().setMatrixA(QA11).setMatrixB(QB12).build());
+		MMReply M2C2 = stubsPool.getNext().multBlock(MMRequest.newBuilder().setMatrixA(QA12).setMatrixB(QB22).build());
+		MMReply M1C3 = stubsPool.getNext().multBlock(MMRequest.newBuilder().setMatrixA(QA21).setMatrixB(QB11).build());
+		MMReply M2C3 = stubsPool.getNext().multBlock(MMRequest.newBuilder().setMatrixA(QA22).setMatrixB(QB21).build());
+		MMReply M1C4 = stubsPool.getNext().multBlock(MMRequest.newBuilder().setMatrixA(QA21).setMatrixB(QB12).build());
+		MMReply M2C4 = stubsPool.getNext().multBlock(MMRequest.newBuilder().setMatrixA(QA22).setMatrixB(QB22).build());
+
+		MMReply C1 = stubsPool.getNext()
+				.addBlock(MMRequest.newBuilder().setMatrixA(M1C1.getMatrixC()).setMatrixB(M2C1.getMatrixC()).build());
+		MMReply C2 = stubsPool.getNext()
+				.addBlock(MMRequest.newBuilder().setMatrixA(M1C2.getMatrixC()).setMatrixB(M2C2.getMatrixC()).build());
+		MMReply C3 = stubsPool.getNext()
+				.addBlock(MMRequest.newBuilder().setMatrixA(M1C3.getMatrixC()).setMatrixB(M2C3.getMatrixC()).build());
+		MMReply C4 = stubsPool.getNext()
+				.addBlock(MMRequest.newBuilder().setMatrixA(M1C4.getMatrixC()).setMatrixB(M2C4.getMatrixC()).build());
+
+		int[][] C1array = MatrixPool.make2DFromProto(C1.getMatrixC());
+		int[][] C2array = MatrixPool.make2DFromProto(C2.getMatrixC());
+		int[][] C3array = MatrixPool.make2DFromProto(C3.getMatrixC());
+		int[][] C4array = MatrixPool.make2DFromProto(C4.getMatrixC());
+
+		int[][]result = MatrixPool.joinFromQuarters(C1array, C2array, C3array, C4array);
+		return Arrays.deepToString(result);
 	}
 }

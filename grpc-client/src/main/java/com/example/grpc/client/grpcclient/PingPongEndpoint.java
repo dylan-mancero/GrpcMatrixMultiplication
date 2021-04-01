@@ -62,7 +62,8 @@ public class PingPongEndpoint {
 		}
 		return "Matrices deleted...200..OKAY";
 	}
-	@GetMapping("/multiply") public String multiplyMatrices() {
-		return grpcClientService.multiplyMatrix(matrixPool.getA(), matrixPool.getB());
+	@GetMapping("/multiply") public String multiplyMatrices(@RequestParam String deadline) {
+		int deadlineInt = Integer.parseInt(deadline);
+		return grpcClientService.multiplyMatrix(matrixPool.getA(), matrixPool.getB(), deadlineInt);
 	}
 }

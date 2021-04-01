@@ -11,9 +11,15 @@ public class StubsPool {
         this.queue = new LinkedList<>();
     }
     public MatrixMultServiceBlockingStub getNext() {
-        return this.queue.remove();
+        MatrixMultServiceBlockingStub head = this.queue.remove();
+        try{
+            return head;
+        }finally {
+            this.queue.add(head);
+        }
     }
     public void addStub(MatrixMultServiceBlockingStub stubby) {
+        System.out.println("Servers is being added");
         this.queue.add(stubby);
     }
 }
