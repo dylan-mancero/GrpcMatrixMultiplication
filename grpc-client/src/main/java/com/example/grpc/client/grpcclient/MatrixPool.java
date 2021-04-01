@@ -1,5 +1,8 @@
 package com.example.grpc.client.grpcclient;
 
+import com.example.grpc.server.grpcserver.Matrix;
+import com.example.grpc.server.grpcserver.Row;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -49,8 +52,11 @@ public class MatrixPool {
             }
         }
     }
+
     public int[][] getA() { return this.matrixA; }
+
     public int[][] getB() { return this.matrixB; }
+
     public Boolean deleteMatrices() {
         if (this.matrixA == null || this.matrixB == null)
             return false;
@@ -58,6 +64,34 @@ public class MatrixPool {
         this.matrixB = null;
         return true;
     }
+
+    public static Matrix makeProtoFrom2D(int [][] A) {
+        Matrix.Builder matrix = Matrix.newBuilder();
+        int size = A.length;
+        for (int i = 0; i < size; i++) {
+            Row.Builder row = Row.newBuilder();
+            for (int j = 0; j < A[i].length; j++) {
+                row.addColumn(A[i][j]);
+            }
+            matrix.addRow(i, row.build());
+        }
+        return matrix.build();
+    }
+
+    public static int [][] make2DFromProto(Matrix matrix) {
+        int size = matrix.getRowCount();
+        int C[][]= new int[size][size];
+
+        for (int i=0; i<size; i++)
+        {
+            for (int j=0;j < size;j++)
+            {
+                C[i][j] = matrix.getRow(i).getColumn(j);
+            }
+        }
+        return C;
+    }
+
     private static boolean powerOfTwoBitwise(int n){
         return (n & n-1) == 0;
     }
