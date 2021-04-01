@@ -93,7 +93,7 @@ public class MatrixPool {
     }
 
     public static int [][] joinFromQuarters(int[][] Q1, int[][] Q2, int[][] Q3, int[][] Q4) {
-        int SIZE = Q1.length*4;
+        int SIZE = Q1.length*2;
         int[][] combinedMatrix = new int[SIZE][SIZE];
 
         for (int i = 0; i < SIZE / 2; i++) {
