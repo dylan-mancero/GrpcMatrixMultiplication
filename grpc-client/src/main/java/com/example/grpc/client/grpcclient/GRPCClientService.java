@@ -93,23 +93,9 @@ public class GRPCClientService {
 		int[][] C3array = MatrixPool.make2DFromProto(C3.getMatrixC());
 		int[][] C4array = MatrixPool.make2DFromProto(C4.getMatrixC());
 
-		int[][] finalArray = new int[SIZE][SIZE];
+		int[][] combinedMatrix = MatrixPool.joinFromQuarters(C1array, C2array, C3array, C4array);
 
-		for (int i = 0; i < SIZE / 2; i++) {
-			for (int j = 0; j < SIZE / 2; j++) {
-
-				finalArray[i][j] = C1array[i][j]; // top left
-				finalArray[i][j] = C2array[i][j + SIZE / 2]; // top right
-				finalArray[i][j] = C3array[i + SIZE / 2][j]; // bottom left
-				finalArray[i][j] = C4array[i + SIZE / 2][j + SIZE / 2]; // bottom right
-
-			}
-		}
-
-		System.out.println("Final Answer");
-		System.out.println(Arrays.deepToString(finalArray));
 		channel.shutdown();
-
-		return Arrays.deepToString(finalArray);
+		return Arrays.deepToString(combinedMatrix);
 	}
 }

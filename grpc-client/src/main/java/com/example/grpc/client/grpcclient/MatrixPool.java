@@ -92,6 +92,21 @@ public class MatrixPool {
         return C;
     }
 
+    public static int [][] joinFromQuarters(int[][] Q1, int[][] Q2, int[][] Q3, int[][] Q4) {
+        int SIZE = Q1.length*4;
+        int[][] combinedMatrix = new int[SIZE][SIZE];
+
+        for (int i = 0; i < SIZE / 2; i++) {
+            for (int j = 0; j < SIZE / 2; j++) {
+
+                combinedMatrix[i][j] = Q1[i][j]; // top left
+                combinedMatrix[i][j + SIZE / 2] = Q2[i][j]; // top right
+                combinedMatrix[i + SIZE / 2][j] = Q3[i][j]; // bottom left
+                combinedMatrix[i + SIZE / 2][j + SIZE / 2] = Q4[i][j]; // bottom right
+            }
+        }
+        return combinedMatrix;
+    }
     private static boolean powerOfTwoBitwise(int n){
         return (n & n-1) == 0;
     }
