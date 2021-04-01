@@ -38,14 +38,14 @@ public class GRPCClientService {
     }
     public String multiplyMatrix(int[][]A, int[][]B, int deadline) {
     	this.DEADLINE = deadline;
-		ManagedChannel channel1 = ManagedChannelBuilder.forAddress("localhost", 9090).usePlaintext().build();
-		ManagedChannel channel2 = ManagedChannelBuilder.forAddress("localhost", 9090).usePlaintext().build();
-		ManagedChannel channel3 = ManagedChannelBuilder.forAddress("localhost", 9090).usePlaintext().build();
-		ManagedChannel channel4 = ManagedChannelBuilder.forAddress("localhost", 9090).usePlaintext().build();
-		ManagedChannel channel5 = ManagedChannelBuilder.forAddress("localhost", 9090).usePlaintext().build();
-		ManagedChannel channel6 = ManagedChannelBuilder.forAddress("localhost", 9090).usePlaintext().build();
-		ManagedChannel channel7 = ManagedChannelBuilder.forAddress("localhost", 9090).usePlaintext().build();
-		ManagedChannel channel8 = ManagedChannelBuilder.forAddress("localhost", 9090).usePlaintext().build();
+		ManagedChannel channel1 = ManagedChannelBuilder.forAddress("3.85.133.217", 9090).usePlaintext().build();
+		ManagedChannel channel2 = ManagedChannelBuilder.forAddress("54.91.241.179", 9090).usePlaintext().build();
+		ManagedChannel channel3 = ManagedChannelBuilder.forAddress("52.87.199.35", 9090).usePlaintext().build();
+		ManagedChannel channel4 = ManagedChannelBuilder.forAddress("54.209.248.91", 9090).usePlaintext().build();
+		ManagedChannel channel5 = ManagedChannelBuilder.forAddress("54.81.164.162", 9090).usePlaintext().build();
+		ManagedChannel channel6 = ManagedChannelBuilder.forAddress("54.236.236.71", 9090).usePlaintext().build();
+		ManagedChannel channel7 = ManagedChannelBuilder.forAddress("3.90.87.185", 9090).usePlaintext().build();
+		ManagedChannel channel8 = ManagedChannelBuilder.forAddress("54.88.166.86", 9090).usePlaintext().build();
 
 		MatrixMultServiceBlockingStub stub = MatrixMultServiceGrpc.newBlockingStub(channel1);
 		MatrixMultServiceBlockingStub stub2 = MatrixMultServiceGrpc.newBlockingStub(channel2);
