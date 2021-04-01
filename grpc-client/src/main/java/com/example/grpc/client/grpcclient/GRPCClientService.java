@@ -47,7 +47,9 @@ public class GRPCClientService {
 		ManagedChannel channel6 = ManagedChannelBuilder.forAddress("54.236.236.71", 9090).usePlaintext().build();
 		ManagedChannel channel7 = ManagedChannelBuilder.forAddress("3.90.87.185", 9090).usePlaintext().build();
 		ManagedChannel channel8 = ManagedChannelBuilder.forAddress("54.88.166.86", 9090).usePlaintext().build();
-
+		ArrayList<ManagedChannel> channels = new ArrayList<>();
+		channels.add(channel1);channels.add(channel2);channels.add(channel3);channels.add(channel4);channels.add(channel5);
+		channels.add(channel6);channels.add(channel7);channels.add(channel8);
 		MatrixMultServiceBlockingStub stub = MatrixMultServiceGrpc.newBlockingStub(channel1);
 		MatrixMultServiceBlockingStub stub2 = MatrixMultServiceGrpc.newBlockingStub(channel2);
 		MatrixMultServiceBlockingStub stub3 = MatrixMultServiceGrpc.newBlockingStub(channel3);
@@ -64,6 +66,7 @@ public class GRPCClientService {
 		allStubs.add(stub);allStubs.add(stub2);allStubs.add(stub3);allStubs.add(stub4);allStubs.add(stub5);
 		allStubs.add(stub6);allStubs.add(stub7);allStubs.add(stub8);
 		stubsPool.addStub(stub);
+
 
 		int NUM_SERVER = 1;
 		int SIZE = A.length;
@@ -146,6 +149,9 @@ public class GRPCClientService {
 		int[][] C4array = MatrixPool.make2DFromProto(C4.getMatrixC());
 
 		int[][]result = MatrixPool.joinFromQuarters(C1array, C2array, C3array, C4array);
+
+		for (ManagedChannel channel : channels)
+			channel.shutdown();
 		return Arrays.deepToString(result);
 	}
 }
