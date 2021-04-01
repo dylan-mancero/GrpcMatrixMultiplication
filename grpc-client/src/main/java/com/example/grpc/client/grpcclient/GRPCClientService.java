@@ -38,6 +38,7 @@ public class GRPCClientService {
     }
     public String multiplyMatrix(int[][]A, int[][]B, int deadline) {
     	this.DEADLINE = deadline;
+    	//all servers
 		ManagedChannel channel1 = ManagedChannelBuilder.forAddress("3.85.133.217", 9090).usePlaintext().build();
 		ManagedChannel channel2 = ManagedChannelBuilder.forAddress("54.91.241.179", 9090).usePlaintext().build();
 		ManagedChannel channel3 = ManagedChannelBuilder.forAddress("52.87.199.35", 9090).usePlaintext().build();
